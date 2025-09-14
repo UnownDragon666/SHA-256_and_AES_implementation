@@ -1,6 +1,7 @@
 package secureHashAlgorithm;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public class SHA2 {
     /// This is an implementation of the SHA-2 (256 bits) standard by Idrees Munshi
@@ -31,15 +32,6 @@ public class SHA2 {
             0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
     };
 
-    int a = h[0];
-    int b = h[1];
-    int c = h[2];
-    int d = h[3];
-    int e = h[4];
-    int f = h[5];
-    int g = h[6];
-    int hn = h[7];
-
     // Message Schedule, once computed:
     public int[] W;
 
@@ -54,14 +46,19 @@ public class SHA2 {
     public String hash() {
         String input = this.input;
         byte[] processedInput = this.preProc(input);
+        int blockNum = processedInput.length/64;
+
+        for (int i = 0; i < 8; i++) H[i] = h[i];
+
+        for (int i = 0; i < blockNum; i++){
+            byte[] block = Arrays.copyOfRange(processedInput, i*64, (i+1)*64);
+            // Part 2 Message Schedule
+            this.W = messageSchedule(block);
+            // Part 3 Compression
+            compressionLoop();
+        }
 
         System.out.println();
-
-        // Part 2 Message Schedule
-        this.W = this.messageSchedule(processedInput);
-
-        // Part 3 Compression
-        this.compressionLoop();
 
         // Finally, the digest is ready, all that needs to be done is the concatenation of the H array.
         StringBuilder hash = new StringBuilder();
@@ -164,6 +161,15 @@ public class SHA2 {
     }
 
     public void compressionLoop() {
+        int a = H[0];
+        int b = H[1];
+        int c = H[2];
+        int d = H[3];
+        int e = H[4];
+        int f = H[5];
+        int g = H[6];
+        int hn = H[7];
+
         for (int i = 0; i < 64; i++) {
             int Sigma1 = rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25);
             int choiceFunc = (e & f) ^ ((~e) & g);
@@ -179,18 +185,16 @@ public class SHA2 {
             c = b;
             b = a;
             a = temp2 + temp1;
-
-
         }
 
-        H[0] = h[0] + a;
-        H[1] = h[1] + b;
-        H[2] = h[2] + c;
-        H[3] = h[3] + d;
-        H[4] = h[4] + e;
-        H[5] = h[5] + f;
-        H[6] = h[6] + g;
-        H[7] = h[7] + hn;
+        H[0] = H[0] + a;
+        H[1] = H[1] + b;
+        H[2] = H[2] + c;
+        H[3] = H[3] + d;
+        H[4] = H[4] + e;
+        H[5] = H[5] + f;
+        H[6] = H[6] + g;
+        H[7] = H[7] + hn;
 
 //        System.out.println(Integer.toBinaryString(a));
 //        System.out.println(Integer.toBinaryString(b));
